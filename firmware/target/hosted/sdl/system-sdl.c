@@ -267,6 +267,11 @@ void system_init(void)
     SDL_DestroySemaphore(s);
 #else
     SDL_AddEventWatch(sdl_event_filter, NULL);
+    /* With pthread-based cooperative threading, the main OS thread blocks on a
+     * condvar when swapped out. Register a hook so it periodically wakes and
+     * pumps SDL events, which is required on macOS. */
+    extern void thread_unix_set_sdl_pump(void (*)(void));
+    thread_unix_set_sdl_pump(SDL_PumpEvents);
 #endif
 }
 
