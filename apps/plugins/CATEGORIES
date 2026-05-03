@@ -58,6 +58,7 @@ lamp,apps
 lastfm_scrobbler,apps
 lastfm_scrobbler_viewer,viewers
 logo,demos
+aapippo,demos
 lrcplayer,apps
 lua,viewers
 fractals,demos
