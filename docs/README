@@ -1,4 +1,8 @@
-⚠️ This is an unofficial fork I've made to run rockboxui on Apple Silicon Macs
+⚠️ Note: This is an unofficial fork of the Rockbox mainline (git.rockbox.org/rockbox)
+This repository specifically focuses on enabling RockboxUI compatibility for
+Apple Silicon (M1/M2/M3) Macs.
+Please be aware that this is an experimental, personal project
+and may be unstable in its current state.
 
                __________               __   ___.
      Open      \______   \ ____   ____ |  | _\_ |__   _______  ___
