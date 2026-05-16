@@ -71,6 +71,23 @@ enum plugin_status plugin_start(const void *parameter)
 
   int btn;
 
+  typedef struct
+  {
+    int x;
+    int y;
+    int width;
+    int height;
+    int position;
+  } SelectPixel;
+
+  SelectPixel select_pixel = {
+      .x = 20,
+      .y = 20,
+      .width = 10,
+      .height = 10,
+      .position = 0,
+  };
+
   // int text_width, text_height;
   // rb->lcd_getstringsize(file_text, &text_width, &text_height);
 
@@ -84,6 +101,20 @@ enum plugin_status plugin_start(const void *parameter)
 
     if (btn == BUTTON_MENU)
       break;
+
+    if (btn == BUTTON_SCROLL_FWD)
+    {
+      if (select_pixel.position < num_entries - 1)
+        select_pixel.position++;
+      select_pixel.y = select_pixel.position * 20;
+    }
+
+    if (btn == BUTTON_SCROLL_BACK)
+    {
+      if (select_pixel.position > 0)
+        select_pixel.position--;
+      select_pixel.y = select_pixel.position * 20;
+    }
 
     rb->lcd_clear_display();
 
@@ -109,6 +140,9 @@ enum plugin_status plugin_start(const void *parameter)
     {
       rb->lcd_putsxyf(20, (i * 20) + 20, "%s - %s", entries[i].vendor, entries[i].seed);
     }
+
+    rb->lcd_set_foreground(LCD_RGBPACK(255, 0, 0));
+    rb->lcd_fillrect(select_pixel.x - 18, select_pixel.y, select_pixel.width, select_pixel.height);
 
     // unsigned char key_bytes[20];
     // int key_len = base32_decode(entries[0].seed, key_bytes, sizeof(key_bytes));
