@@ -8,6 +8,8 @@ tagcache/tagcache.c
 #endif
 chessclock.c
 credits.c
+aapippo.c
+1pass.c
 cube.c
 cue_playlist.c
 dart_scorer.c
