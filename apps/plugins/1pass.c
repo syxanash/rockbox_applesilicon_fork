@@ -1,7 +1,7 @@
 #include "plugin.h"
 
-#include "hotp_utils/hmac.h"
-#include "hotp_utils/sha1.h"
+#include "hotp_utils/sha1.c"
+#include "hotp_utils/hmac.c"
 #include "hotp_utils/base32.h"
 
 #define CFG_FILE PLUGIN_GAMES_DATA_DIR "/1pass/seeds.cfg"
@@ -104,15 +104,17 @@ enum plugin_status plugin_start(const void *parameter)
 
     if (btn == BUTTON_SCROLL_FWD)
     {
-      if (select_pixel.position < num_entries - 1)
+      if ((select_pixel.position + 1) <= num_entries)
         select_pixel.position++;
+
       select_pixel.y = select_pixel.position * 20;
     }
 
     if (btn == BUTTON_SCROLL_BACK)
     {
-      if (select_pixel.position > 0)
+      if ((select_pixel.position - 1) >= 1)
         select_pixel.position--;
+
       select_pixel.y = select_pixel.position * 20;
     }
 
