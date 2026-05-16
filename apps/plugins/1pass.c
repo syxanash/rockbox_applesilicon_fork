@@ -1,5 +1,9 @@
 #include "plugin.h"
 
+#include "hotp_utils/hmac.h"
+#include "hotp_utils/sha1.h"
+#include "hotp_utils/base32.h"
+
 #define CFG_FILE PLUGIN_GAMES_DATA_DIR "/1pass/seeds.cfg"
 #define MAX_ENTRIES 16
 
@@ -67,8 +71,6 @@ enum plugin_status plugin_start(const void *parameter)
 
   int btn;
 
-  // const char *file_text = read_file("/1pass/test.dat");
-
   // int text_width, text_height;
   // rb->lcd_getstringsize(file_text, &text_width, &text_height);
 
@@ -91,9 +93,6 @@ enum plugin_status plugin_start(const void *parameter)
 
     rb->lcd_set_foreground(LCD_WHITE);
 
-    // rb->lcd_putsxyf(50, 80, "seed %s", seed);
-    // rb->lcd_putsxyf(50, 100, "vendor %s", vendor);
-
     // paint the clock on the top right corner of the screen
 
     char timeBuf[32];
@@ -106,7 +105,15 @@ enum plugin_status plugin_start(const void *parameter)
 
     rb->lcd_putsxy(0, 0, "MENU to quit");
 
-    rb->lcd_putsxyf(20, 20, "Seed: %s", entries[0].seed);
+    for (int i = 0; i < num_entries; i++)
+    {
+      rb->lcd_putsxyf(20, (i * 20) + 20, "%s - %s", entries[i].vendor, entries[i].seed);
+    }
+
+    // unsigned char key_bytes[20];
+    // int key_len = base32_decode(entries[0].seed, key_bytes, sizeof(key_bytes));
+
+    // rb->lcd_putsxyf(20, 40, "len: %i", key_len);
 
     // rb->lcd_set_foreground(LCD_RGBPACK(255, 0, 0));
     // long now = *rb->current_tick;
