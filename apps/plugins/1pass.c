@@ -102,6 +102,8 @@ enum plugin_status plugin_start(const void *parameter)
 
   load_cfg();
 
+  rb->lcd_setfont(FONT_UI);
+
   int btn;
 
   typedef struct
@@ -116,8 +118,8 @@ enum plugin_status plugin_start(const void *parameter)
   SelectPixel select_pixel = {
       .x = 20,
       .y = 20,
-      .width = 10,
-      .height = 10,
+      .width = 15,
+      .height = 15,
       .position = 1,
   };
 
@@ -191,11 +193,11 @@ enum plugin_status plugin_start(const void *parameter)
 
     for (int i = 0; i < num_entries; i++)
     {
-      rb->lcd_putsxyf(20, (i * 20) + 20, "%s - %s", entries[i].vendor, entries[i].seed);
+      rb->lcd_putsxyf(20, (i * 20) + 40, "%s - %s", entries[i].vendor, entries[i].seed);
     }
 
     rb->lcd_set_foreground(LCD_RGBPACK(255, 0, 0));
-    rb->lcd_fillrect(select_pixel.x - 18, select_pixel.y, select_pixel.width, select_pixel.height);
+    rb->lcd_fillrect(select_pixel.x - 18, select_pixel.y + 20, select_pixel.width, select_pixel.height);
 
     // unsigned char key_bytes[20];
     // int key_len = base32_decode(entries[0].seed, key_bytes, sizeof(key_bytes));
