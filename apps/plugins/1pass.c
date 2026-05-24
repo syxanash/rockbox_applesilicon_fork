@@ -1,8 +1,7 @@
 #include "plugin.h"
+#include <stdint.h>
 
-#include "hotp_utils/sha1.c"
-#include "hotp_utils/hmac.c"
-#include "hotp_utils/base32.h"
+#include "totp_utils/totp.h"
 
 #define CFG_FILE PLUGIN_GAMES_DATA_DIR "/1pass/seeds.cfg"
 #define MAX_ENTRIES 16
@@ -11,6 +10,7 @@ struct config_entry
 {
   char seed[32];
   char vendor[32];
+  uint32_t otp;
 };
 
 static struct config_entry entries[MAX_ENTRIES];
@@ -118,17 +118,10 @@ enum plugin_status plugin_start(const void *parameter)
   SelectPixel select_pixel = {
       .x = 20,
       .y = 20,
-      .width = 15,
-      .height = 15,
+      .width = 12,
+      .height = 12,
       .position = 1,
   };
-
-  // int text_width, text_height;
-  // rb->lcd_getstringsize(file_text, &text_width, &text_height);
-
-  // int cx = (LCD_WIDTH - text_width) / 2;  // horizontal centre
-  // int cy = (LCD_HEIGHT - text_height) / 2; // vertical centre
-  // rb->lcd_putsxy(cx, cy, file_text);
 
   while (true)
   {
@@ -137,6 +130,9 @@ enum plugin_status plugin_start(const void *parameter)
     struct tm *t = rb->get_time();
     // fields: tm_hour, tm_min, tm_sec  (0-based)
     // tm_year (years since 1900), tm_mon (0-based), tm_mday (1-based)
+
+    unsigned long window_secs = (time(NULL) % 30);
+    int bar_size = ((30 - window_secs) * LCD_WIDTH) / 30;
 
     btn = rb->button_get(false);
 
@@ -166,6 +162,11 @@ enum plugin_status plugin_start(const void *parameter)
       select_pixel.y = select_pixel.position * 20;
     }
 
+    for (int i = 0; i < num_entries; i++)
+    {
+      entries[i].otp = totp(entries[i].seed);
+    }
+
 #ifdef USB_ENABLE_HID
     if (btn == BUTTON_SELECT)
     {
@@ -193,26 +194,17 @@ enum plugin_status plugin_start(const void *parameter)
 
     for (int i = 0; i < num_entries; i++)
     {
-      rb->lcd_putsxyf(20, (i * 20) + 40, "%s - %s", entries[i].vendor, entries[i].seed);
+      rb->lcd_putsxyf(20, (i * 20) + 30, "%s - %06u", entries[i].vendor, entries[i].otp);
     }
 
+    rb->lcd_set_foreground(LCD_RGBPACK(0, 200, 255));
+    rb->lcd_fillrect(0, 15, LCD_WIDTH, 10);
+
+    rb->lcd_set_foreground(LCD_RGBPACK(255, 140, 0));
+    rb->lcd_fillrect(0, 15, bar_size, 10);
+
     rb->lcd_set_foreground(LCD_RGBPACK(255, 0, 0));
-    rb->lcd_fillrect(select_pixel.x - 18, select_pixel.y + 20, select_pixel.width, select_pixel.height);
-
-    // unsigned char key_bytes[20];
-    // int key_len = base32_decode(entries[0].seed, key_bytes, sizeof(key_bytes));
-
-    // rb->lcd_putsxyf(20, 40, "len: %i", key_len);
-
-    // rb->lcd_set_foreground(LCD_RGBPACK(255, 0, 0));
-    // long now = *rb->current_tick;
-    // char buf[32];
-    // rb->snprintf(buf, sizeof(buf), "%ld", now);
-    // rb->lcd_putsxy(0, 20, buf);
-
-    // struct tm t_copy = *t;
-    // time_t unix_ts = rb->mktime(&t_copy);
-    // rb->lcd_putsxyf(100, 150, "Unix %ld", (long)unix_ts);
+    rb->lcd_fillrect(select_pixel.x - 18, select_pixel.y + 10, select_pixel.width, select_pixel.height);
 
     rb->lcd_update();
   }
