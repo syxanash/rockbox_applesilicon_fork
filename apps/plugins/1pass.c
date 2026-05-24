@@ -135,8 +135,8 @@ enum plugin_status plugin_start(const void *parameter)
 
     unsigned long now = time(NULL);
     uint64_t counter = now / 30;
-    unsigned long window_secs = now % 30;
-    int bar_size = ((30 - window_secs) * LCD_WIDTH) / 30;
+    unsigned long period_secs = now % 30;
+    int bar_size = ((30 - period_secs) * LCD_WIDTH) / 30;
 
     btn = rb->button_get(false);
 
@@ -169,7 +169,7 @@ enum plugin_status plugin_start(const void *parameter)
     if (counter != last_counter)
     {
       for (int i = 0; i < num_entries; i++)
-        entries[i].otp = totp(entries[i].seed);
+        entries[i].otp = totp(entries[i].seed, 30);
 
       last_counter = counter;
     }
