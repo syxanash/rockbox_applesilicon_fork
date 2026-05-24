@@ -123,6 +123,8 @@ enum plugin_status plugin_start(const void *parameter)
       .position = 1,
   };
 
+  uint64_t last_counter = 0;
+
   while (true)
   {
     // MARK: Update
@@ -131,7 +133,9 @@ enum plugin_status plugin_start(const void *parameter)
     // fields: tm_hour, tm_min, tm_sec  (0-based)
     // tm_year (years since 1900), tm_mon (0-based), tm_mday (1-based)
 
-    unsigned long window_secs = (time(NULL) % 30);
+    unsigned long now = time(NULL);
+    uint64_t counter = now / 30;
+    unsigned long window_secs = now % 30;
     int bar_size = ((30 - window_secs) * LCD_WIDTH) / 30;
 
     btn = rb->button_get(false);
@@ -162,9 +166,12 @@ enum plugin_status plugin_start(const void *parameter)
       select_pixel.y = select_pixel.position * 20;
     }
 
-    for (int i = 0; i < num_entries; i++)
+    if (counter != last_counter)
     {
-      entries[i].otp = totp(entries[i].seed);
+      for (int i = 0; i < num_entries; i++)
+        entries[i].otp = totp(entries[i].seed);
+
+      last_counter = counter;
     }
 
 #ifdef USB_ENABLE_HID
@@ -197,11 +204,15 @@ enum plugin_status plugin_start(const void *parameter)
       rb->lcd_putsxyf(20, (i * 20) + 30, "%s - %06u", entries[i].vendor, entries[i].otp);
     }
 
+    // paint the elapsed seconds progress bar
+
     rb->lcd_set_foreground(LCD_RGBPACK(0, 200, 255));
     rb->lcd_fillrect(0, 15, LCD_WIDTH, 10);
 
     rb->lcd_set_foreground(LCD_RGBPACK(255, 140, 0));
     rb->lcd_fillrect(0, 15, bar_size, 10);
+
+    // paint selection pixel
 
     rb->lcd_set_foreground(LCD_RGBPACK(255, 0, 0));
     rb->lcd_fillrect(select_pixel.x - 18, select_pixel.y + 10, select_pixel.width, select_pixel.height);
