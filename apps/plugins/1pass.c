@@ -10,6 +10,7 @@ struct config_entry
 {
   char seed[32];
   char vendor[32];
+  uint8_t period;
   uint32_t otp;
 };
 
@@ -52,6 +53,16 @@ static void load_cfg(void)
       if (idx >= 0 && idx < MAX_ENTRIES)
       {
         rb->strlcpy(entries[idx].vendor, val, sizeof(entries[idx].vendor));
+        if (idx + 1 > num_entries)
+          num_entries = idx + 1;
+      }
+    }
+    else if (rb->strncmp(key, "period", 6) == 0)
+    {
+      int idx = rb->atoi(key + 6) - 1; // "period1" -> 0, "period2" -> 1
+      if (idx >= 0 && idx < MAX_ENTRIES)
+      {
+        entries[idx].period = (uint8_t)rb->atoi(val);
         if (idx + 1 > num_entries)
           num_entries = idx + 1;
       }
@@ -117,26 +128,25 @@ enum plugin_status plugin_start(const void *parameter)
 
   SelectPixel select_pixel = {
       .x = 20,
-      .y = 20,
+      .y = 30,
       .width = 12,
       .height = 12,
       .position = 1,
   };
 
-  uint64_t last_counter = 0;
+  uint64_t last_counter[MAX_ENTRIES] = {0};
+  int timer_width, timer_height;
+  char sample_time[] = "00:00:00";
+  rb->lcd_getstringsize(sample_time, &timer_width, &timer_height);
 
+  // MARK: Update
   while (true)
   {
-    // MARK: Update
-
     struct tm *t = rb->get_time();
+    struct tm t_copy = *t;
+    unsigned long now = (unsigned long)rb->mktime(&t_copy);
     // fields: tm_hour, tm_min, tm_sec  (0-based)
     // tm_year (years since 1900), tm_mon (0-based), tm_mday (1-based)
-
-    unsigned long now = time(NULL);
-    uint64_t counter = now / 30;
-    unsigned long period_secs = now % 30;
-    int bar_size = ((30 - period_secs) * LCD_WIDTH) / 30;
 
     btn = rb->button_get(false);
 
@@ -155,7 +165,7 @@ enum plugin_status plugin_start(const void *parameter)
       if ((select_pixel.position + 1) <= num_entries)
         select_pixel.position++;
 
-      select_pixel.y = select_pixel.position * 20;
+      select_pixel.y = select_pixel.position * 30;
     }
 
     if (btn == BUTTON_SCROLL_BACK)
@@ -163,15 +173,19 @@ enum plugin_status plugin_start(const void *parameter)
       if ((select_pixel.position - 1) >= 1)
         select_pixel.position--;
 
-      select_pixel.y = select_pixel.position * 20;
+      select_pixel.y = select_pixel.position * 30;
     }
 
-    if (counter != last_counter)
+    for (int i = 0; i < num_entries; i++)
     {
-      for (int i = 0; i < num_entries; i++)
-        entries[i].otp = totp(entries[i].seed, 30);
+      uint64_t counter = now / entries[i].period;
 
-      last_counter = counter;
+      if (counter != last_counter[i])
+      {
+        entries[i].otp = totp(entries[i].seed, entries[i].period);
+
+        last_counter[i] = counter;
+      }
     }
 
 #ifdef USB_ENABLE_HID
@@ -190,9 +204,7 @@ enum plugin_status plugin_start(const void *parameter)
     // paint the clock on the top right corner of the screen
 
     char timeBuf[32];
-    int timer_width, timer_height;
     rb->snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d:%02d", t->tm_hour, t->tm_min, t->tm_sec);
-    rb->lcd_getstringsize(timeBuf, &timer_width, &timer_height);
     int timerx = LCD_WIDTH - timer_width;
     int timery = 0;
     rb->lcd_putsxyf(timerx, timery, timeBuf);
@@ -201,21 +213,26 @@ enum plugin_status plugin_start(const void *parameter)
 
     for (int i = 0; i < num_entries; i++)
     {
-      rb->lcd_putsxyf(20, (i * 20) + 30, "%s - %06u", entries[i].vendor, entries[i].otp);
+      unsigned long period_secs = now % entries[i].period;
+      int bar_size = ((entries[i].period - period_secs) * LCD_WIDTH) / entries[i].period;
+
+      // paint the elapsed seconds progress bar
+
+      rb->lcd_set_foreground(LCD_RGBPACK(255, 140, 0));
+      rb->lcd_fillrect(0, (i * 30) + 44, LCD_WIDTH, 8);
+
+      rb->lcd_set_foreground(LCD_RGBPACK(0, 200, 255));
+      rb->lcd_fillrect(0, (i * 30) + 44, bar_size, 8);
+
+      // paint the otp code with vendor
+      rb->lcd_set_foreground(LCD_WHITE);
+      rb->lcd_putsxyf(20, (i * 30) + 30, "%s - %06u", entries[i].vendor, entries[i].otp);
     }
-
-    // paint the elapsed seconds progress bar
-
-    rb->lcd_set_foreground(LCD_RGBPACK(0, 200, 255));
-    rb->lcd_fillrect(0, 15, LCD_WIDTH, 10);
-
-    rb->lcd_set_foreground(LCD_RGBPACK(255, 140, 0));
-    rb->lcd_fillrect(0, 15, bar_size, 10);
 
     // paint selection pixel
 
     rb->lcd_set_foreground(LCD_RGBPACK(255, 0, 0));
-    rb->lcd_fillrect(select_pixel.x - 18, select_pixel.y + 10, select_pixel.width, select_pixel.height);
+    rb->lcd_fillrect(select_pixel.x - 18, select_pixel.y, select_pixel.width, select_pixel.height);
 
     rb->lcd_update();
   }
