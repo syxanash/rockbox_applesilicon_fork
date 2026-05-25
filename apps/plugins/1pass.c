@@ -98,9 +98,9 @@ static void type_string(const char *str)
     if (key != HID_KEYBOARD_RESERVED)
     {
       rb->usb_hid_send(HID_USAGE_PAGE_KEYBOARD_KEYPAD, key);
-      rb->sleep(2);
+      rb->sleep(1);
       rb->usb_hid_send(HID_USAGE_PAGE_KEYBOARD_KEYPAD, HID_KEYBOARD_RESERVED);
-      rb->sleep(2);
+      rb->sleep(1);
     }
   }
 }
@@ -161,7 +161,7 @@ enum plugin_status plugin_start(const void *parameter)
     if (btn == SYS_USB_CONNECTED)
     {
       rb->usb_acknowledge(SYS_USB_CONNECTED_ACK, 0);
-      continue;
+      btn = 0;
     }
 
     if (btn == BUTTON_MENU)
@@ -191,7 +191,10 @@ enum plugin_status plugin_start(const void *parameter)
 #ifdef USB_ENABLE_HID
     if (btn == BUTTON_SELECT)
     {
-      type_string("hello world");
+      char otp_buf[7];
+      rb->snprintf(otp_buf, sizeof(otp_buf), "%06lu", entries[select_pixel.position - 1].otp);
+
+      type_string(otp_buf);
     }
 #endif
 
