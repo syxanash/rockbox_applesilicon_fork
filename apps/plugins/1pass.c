@@ -16,6 +16,7 @@ struct config_entry
 
 static struct config_entry entries[MAX_ENTRIES];
 static int num_entries = 0;
+static int entries_per_page = 3;
 
 static void load_cfg(void)
 {
@@ -142,6 +143,12 @@ enum plugin_status plugin_start(const void *parameter)
   // MARK: Update
   while (true)
   {
+    int current_page = (select_pixel.position - 1) / entries_per_page + 1;
+    int page_start = (current_page - 1) * entries_per_page;
+    int page_end = (current_page * entries_per_page) < num_entries
+                       ? (current_page * entries_per_page)
+                       : num_entries;
+
     struct tm *t = rb->get_time();
     struct tm t_copy = *t;
     unsigned long now = (unsigned long)rb->mktime(&t_copy);
@@ -162,21 +169,21 @@ enum plugin_status plugin_start(const void *parameter)
 
     if (btn == BUTTON_SCROLL_FWD)
     {
-      if ((select_pixel.position + 1) <= num_entries)
+      if (select_pixel.position < num_entries)
         select_pixel.position++;
 
-      select_pixel.y = select_pixel.position * 30;
+      select_pixel.y = ((select_pixel.position - 1) % entries_per_page) * 30 + 30;
     }
 
     if (btn == BUTTON_SCROLL_BACK)
     {
-      if ((select_pixel.position - 1) >= 1)
+      if (select_pixel.position > 1)
         select_pixel.position--;
 
-      select_pixel.y = select_pixel.position * 30;
+      select_pixel.y = ((select_pixel.position - 1) % entries_per_page) * 30 + 30;
     }
 
-    for (int i = 0; i < num_entries; i++)
+    for (int i = page_start; i < page_end; i++)
     {
       uint64_t counter = now / entries[i].period;
 
@@ -211,22 +218,31 @@ enum plugin_status plugin_start(const void *parameter)
 
     rb->lcd_putsxy(0, 0, "MENU to quit");
 
-    for (int i = 0; i < num_entries; i++)
+    if ((current_page * entries_per_page) < num_entries)
+      rb->lcd_putsxy(0, LCD_HEIGHT - 10, "···");
+
+    if (current_page > 1)
+      rb->lcd_putsxy(0, 15, "···");
+
+    for (int i = page_start; i < page_end; i++)
     {
+      int row = i - page_start;
+
+      // paint the actual vendor with otp code
       unsigned long period_secs = now % entries[i].period;
       int bar_size = ((entries[i].period - period_secs) * LCD_WIDTH) / entries[i].period;
 
       // paint the elapsed seconds progress bar
 
       rb->lcd_set_foreground(LCD_RGBPACK(255, 140, 0));
-      rb->lcd_fillrect(0, (i * 30) + 44, LCD_WIDTH, 8);
+      rb->lcd_fillrect(0, (row * 30) + 44, LCD_WIDTH, 8);
 
       rb->lcd_set_foreground(LCD_RGBPACK(0, 200, 255));
-      rb->lcd_fillrect(0, (i * 30) + 44, bar_size, 8);
+      rb->lcd_fillrect(0, (row * 30) + 44, bar_size, 8);
 
       // paint the otp code with vendor
       rb->lcd_set_foreground(LCD_WHITE);
-      rb->lcd_putsxyf(20, (i * 30) + 30, "%s - %06u", entries[i].vendor, entries[i].otp);
+      rb->lcd_putsxyf(20, (row * 30) + 30, "%s - %06u", entries[i].vendor, entries[i].otp);
     }
 
     // paint selection pixel
