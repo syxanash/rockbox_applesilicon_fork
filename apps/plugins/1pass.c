@@ -17,6 +17,7 @@ struct config_entry
 static struct config_entry entries[MAX_ENTRIES];
 static int num_entries = 0;
 static int entries_per_page = 3;
+static int utc_offset = 0;
 
 static void load_cfg(void)
 {
@@ -67,6 +68,10 @@ static void load_cfg(void)
         if (idx + 1 > num_entries)
           num_entries = idx + 1;
       }
+    }
+    else if (rb->strncmp(key, "UTC", 3) == 0)
+    {
+      utc_offset = rb->atoi(val);
     }
   }
 
@@ -151,7 +156,7 @@ enum plugin_status plugin_start(const void *parameter)
 
     struct tm *t = rb->get_time();
     struct tm t_copy = *t;
-    unsigned long now = (unsigned long)rb->mktime(&t_copy);
+    unsigned long now = (unsigned long)rb->mktime(&t_copy) - (utc_offset * 3600);
     // fields: tm_hour, tm_min, tm_sec  (0-based)
     // tm_year (years since 1900), tm_mon (0-based), tm_mday (1-based)
 
@@ -238,7 +243,7 @@ enum plugin_status plugin_start(const void *parameter)
 
       // paint the otp code with vendor
       rb->lcd_set_foreground(LCD_WHITE);
-      rb->lcd_putsxyf(20, (row * 30) + 30, "%s - %06u", entries[i].vendor, entries[i].otp);
+      rb->lcd_putsxyf(20, (row * 30) + 30, "%s - %06lu", entries[i].vendor, entries[i].otp);
     }
 
     // paint selection pixel
