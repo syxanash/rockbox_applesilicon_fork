@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdint.h>
-#include <time.h>
 
 #include "base32.h"
 #include "hmac.h"
@@ -8,7 +7,7 @@
 #ifndef _TOTP_H_
 #define _TOTP_H_
 
-static uint32_t totp(char *secret, uint8_t period)
+static uint32_t totp(char *secret, uint8_t period, unsigned long now)
 {
 
   // decode the seed
@@ -29,7 +28,7 @@ static uint32_t totp(char *secret, uint8_t period)
 
   // calculate the counter
 
-  uint64_t counter = time(NULL) / period;
+  uint64_t counter = now / period;
   uint8_t msg[8];
 
   for (int i = 7; i >= 0; i--)
