@@ -167,21 +167,14 @@ enum plugin_status plugin_start(const void *parameter)
     if (btn == BUTTON_MENU)
       break;
 
-    if (btn == BUTTON_SCROLL_FWD)
-    {
-      if (select_pixel.position < num_entries)
-        select_pixel.position++;
+    int btn_action = btn & ~BUTTON_REPEAT;
 
-      select_pixel.y = ((select_pixel.position - 1) % entries_per_page) * 30 + 30;
-    }
+    if (btn_action == BUTTON_SCROLL_FWD && select_pixel.position < num_entries)
+      select_pixel.position++;
+    else if (btn_action == BUTTON_SCROLL_BACK && select_pixel.position > 1)
+      select_pixel.position--;
 
-    if (btn == BUTTON_SCROLL_BACK)
-    {
-      if (select_pixel.position > 1)
-        select_pixel.position--;
-
-      select_pixel.y = ((select_pixel.position - 1) % entries_per_page) * 30 + 30;
-    }
+    select_pixel.y = ((select_pixel.position - 1) % entries_per_page) * 30 + 30;
 
     for (int i = page_start; i < page_end; i++)
     {
@@ -251,6 +244,7 @@ enum plugin_status plugin_start(const void *parameter)
     rb->lcd_fillrect(select_pixel.x - 18, select_pixel.y, select_pixel.width, select_pixel.height);
 
     rb->lcd_update();
+    rb->yield();
   }
 
   return PLUGIN_OK;
