@@ -122,6 +122,8 @@ enum plugin_status plugin_start(const void *parameter)
   rb->lcd_setfont(FONT_UI);
 
   int btn;
+  bool press_selected = false;
+  bool usb_connected = false;
 
   typedef struct
   {
@@ -160,12 +162,18 @@ enum plugin_status plugin_start(const void *parameter)
 
     btn = rb->button_get(false);
 
-    // if the USB is connected while the app is running do not quit the plugin
     if (btn == SYS_USB_CONNECTED)
     {
       rb->splash(HZ * 2, "USB Connected!");
 
       rb->usb_acknowledge(SYS_USB_CONNECTED_ACK, 0);
+      usb_connected = true;
+      btn = 0;
+    }
+    else if (btn == SYS_USB_DISCONNECTED)
+    {
+      rb->splash(HZ * 2, "USB Disconnected!");
+      usb_connected = false;
       btn = 0;
     }
 
@@ -200,14 +208,25 @@ enum plugin_status plugin_start(const void *parameter)
     }
 
 #ifdef USB_ENABLE_HID
-    if (btn == BUTTON_SELECT)
+    if (btn == BUTTON_SELECT && usb_connected)
     {
       char otp_buf[7];
       rb->snprintf(otp_buf, sizeof(otp_buf), "%06lu", entries[select_pixel.position - 1].otp);
 
       type_string(otp_buf);
+      press_selected = true;
     }
 #endif
+
+    if (press_selected && select_pixel.x < LCD_WIDTH)
+    {
+      select_pixel.x = select_pixel.x + 5;
+    }
+    else if (press_selected && select_pixel.x >= LCD_WIDTH)
+    {
+      press_selected = false;
+      select_pixel.x = 20;
+    }
 
     // MARK: Draw
 
@@ -249,12 +268,16 @@ enum plugin_status plugin_start(const void *parameter)
 
       // paint the otp code with vendor
       rb->lcd_set_foreground(LCD_WHITE);
-      rb->lcd_putsxyf(20, (row * 30) + 30, "%s - %06lu", entries[i].vendor, entries[i].otp);
+      rb->lcd_putsxyf(20, (row * 30) + 30, "%s - %06u", entries[i].vendor, entries[i].otp);
     }
 
     // paint selection pixel
 
-    rb->lcd_set_foreground(LCD_RGBPACK(255, 0, 0));
+    if (press_selected)
+      rb->lcd_set_foreground(LCD_RGBPACK(255, 255, 0));
+    else
+      rb->lcd_set_foreground(LCD_RGBPACK(255, 0, 0));
+
     rb->lcd_fillrect(select_pixel.x - 18, select_pixel.y, select_pixel.width, select_pixel.height);
 
     rb->lcd_update();
