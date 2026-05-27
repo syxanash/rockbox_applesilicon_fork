@@ -157,14 +157,14 @@ enum plugin_status plugin_start(const void *parameter)
     struct tm *t = rb->get_time();
     struct tm t_copy = *t;
     unsigned long now = (unsigned long)rb->mktime(&t_copy) - (utc_offset * 3600);
-    // fields: tm_hour, tm_min, tm_sec  (0-based)
-    // tm_year (years since 1900), tm_mon (0-based), tm_mday (1-based)
 
     btn = rb->button_get(false);
 
     // if the USB is connected while the app is running do not quit the plugin
     if (btn == SYS_USB_CONNECTED)
     {
+      rb->splash(HZ * 2, "USB Connected!");
+
       rb->usb_acknowledge(SYS_USB_CONNECTED_ACK, 0);
       btn = 0;
     }
@@ -175,9 +175,15 @@ enum plugin_status plugin_start(const void *parameter)
     int btn_action = btn & ~BUTTON_REPEAT;
 
     if (btn_action == BUTTON_SCROLL_FWD && select_pixel.position < num_entries)
+    {
+      rb->keyclick_click(true, btn);
       select_pixel.position++;
+    }
     else if (btn_action == BUTTON_SCROLL_BACK && select_pixel.position > 1)
+    {
+      rb->keyclick_click(true, btn);
       select_pixel.position--;
+    }
 
     select_pixel.y = ((select_pixel.position - 1) % entries_per_page) * 30 + 30;
 
