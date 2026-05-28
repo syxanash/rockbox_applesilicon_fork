@@ -52,6 +52,11 @@ static void load_cfg(void)
       continue;
 
     *q = '\0';
+
+    char *colon = vendor_start;
+    while (*colon && *colon != ':') colon++;
+    if (*colon == ':') *colon = '\0';
+
     char *params = q + 1;
 
     struct config_entry *e = &entries[num_entries];
