@@ -7,7 +7,7 @@
 #ifndef _TOTP_H_
 #define _TOTP_H_
 
-static uint32_t totp(char *secret, uint8_t period, unsigned long now)
+static uint32_t totp(char *secret, uint8_t period, uint8_t digits, unsigned long now)
 {
 
   // decode the seed
@@ -63,13 +63,14 @@ static uint32_t totp(char *secret, uint8_t period, unsigned long now)
   // dynamic trunc
 
   int offset = digest[19] & 0x0F;
+  int pow10[] = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000};
 
   uint32_t code = ((digest[offset]     & 0x7F) << 24)
                 | ((digest[offset + 1] & 0xFF) << 16)
                 | ((digest[offset + 2] & 0xFF) << 8)
                 |  (digest[offset + 3] & 0xFF);
 
-  uint32_t otp = code % 1000000;
+  uint32_t otp = code % pow10[digits];
 
   // printf("OTP: %06d\n", otp);
 

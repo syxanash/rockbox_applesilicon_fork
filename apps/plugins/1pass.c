@@ -204,7 +204,7 @@ enum plugin_status plugin_start(const void *parameter)
 
       if (counter != last_counter[i])
       {
-        entries[i].otp = totp(entries[i].seed, entries[i].period, now);
+        entries[i].otp = totp(entries[i].seed, entries[i].period, 6, now);
 
         last_counter[i] = counter;
       }
