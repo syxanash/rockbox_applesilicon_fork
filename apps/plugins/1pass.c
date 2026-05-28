@@ -12,6 +12,7 @@ struct config_entry
   char vendor[32];
   uint8_t period;
   uint32_t otp;
+  uint8_t digits;
 };
 
 static struct config_entry entries[MAX_ENTRIES];
@@ -28,54 +29,62 @@ static void load_cfg(void)
   if (fd < 0)
     return;
 
-  char line[80];
+  char line[128];
 
   while (rb->read_line(fd, line, sizeof(line)) > 0)
   {
-    char *eq = line;
-    while (*eq && *eq != '=')
-      eq++;
-    if (*eq != '=')
+    if (rb->strncmp(line, "UTC=", 4) == 0)
+    {
+      utc_offset = rb->atoi(line + 4);
+      continue;
+    }
+
+    if (rb->strncmp(line, "otpauth://totp/", 15) != 0)
+      continue;
+    if (num_entries >= MAX_ENTRIES)
+      break;
+
+    char *vendor_start = line + 15;
+    char *q = vendor_start;
+    while (*q && *q != '?')
+      q++;
+    if (!*q)
       continue;
 
-    *eq = '\0';
-    char *key = line;
-    char *val = eq + 1;
+    *q = '\0';
+    char *params = q + 1;
 
-    if (rb->strncmp(key, "seed", 4) == 0)
+    struct config_entry *e = &entries[num_entries];
+    rb->strlcpy(e->vendor, vendor_start, sizeof(e->vendor));
+
+    // default values if user doesn't specify
+    e->period = 30;
+    e->digits = 6;
+
+    char *p = params;
+    while (*p)
     {
-      int idx = rb->atoi(key + 4) - 1; // "seed1" -> 0, "seed2" -> 1
-      if (idx >= 0 && idx < MAX_ENTRIES)
-      {
-        rb->strlcpy(entries[idx].seed, val, sizeof(entries[idx].seed));
-        if (idx + 1 > num_entries)
-          num_entries = idx + 1;
-      }
+      char *key = p;
+      while (*p && *p != '=')
+        p++;
+      if (!*p)
+        break;
+      *p++ = '\0';
+      char *val = p;
+      while (*p && *p != '&')
+        p++;
+      if (*p)
+        *p++ = '\0';
+
+      if (rb->strcmp(key, "secret") == 0)
+        rb->strlcpy(e->seed, val, sizeof(e->seed));
+      else if (rb->strcmp(key, "period") == 0)
+        e->period = (uint8_t)rb->atoi(val);
+      else if (rb->strcmp(key, "digits") == 0)
+        e->digits = (uint8_t)rb->atoi(val);
     }
-    else if (rb->strncmp(key, "vendor", 6) == 0)
-    {
-      int idx = rb->atoi(key + 6) - 1; // "vendor1" -> 0, "vendor2" -> 1
-      if (idx >= 0 && idx < MAX_ENTRIES)
-      {
-        rb->strlcpy(entries[idx].vendor, val, sizeof(entries[idx].vendor));
-        if (idx + 1 > num_entries)
-          num_entries = idx + 1;
-      }
-    }
-    else if (rb->strncmp(key, "period", 6) == 0)
-    {
-      int idx = rb->atoi(key + 6) - 1; // "period1" -> 0, "period2" -> 1
-      if (idx >= 0 && idx < MAX_ENTRIES)
-      {
-        entries[idx].period = (uint8_t)rb->atoi(val);
-        if (idx + 1 > num_entries)
-          num_entries = idx + 1;
-      }
-    }
-    else if (rb->strncmp(key, "UTC", 3) == 0)
-    {
-      utc_offset = rb->atoi(val);
-    }
+
+    num_entries++;
   }
 
   rb->close(fd);
@@ -204,7 +213,7 @@ enum plugin_status plugin_start(const void *parameter)
 
       if (counter != last_counter[i])
       {
-        entries[i].otp = totp(entries[i].seed, entries[i].period, 6, now);
+        entries[i].otp = totp(entries[i].seed, entries[i].period, entries[i].digits, now);
 
         last_counter[i] = counter;
       }
@@ -213,8 +222,8 @@ enum plugin_status plugin_start(const void *parameter)
 #ifdef USB_ENABLE_HID
     if (btn == BUTTON_SELECT && usb_connected)
     {
-      char otp_buf[7];
-      rb->snprintf(otp_buf, sizeof(otp_buf), "%06lu", entries[select_pixel.position - 1].otp);
+      char otp_buf[9];
+      rb->snprintf(otp_buf, sizeof(otp_buf), "%0*lu", entries[select_pixel.position - 1].digits, entries[select_pixel.position - 1].otp);
 
       type_string(otp_buf);
       press_selected = true;
@@ -271,7 +280,7 @@ enum plugin_status plugin_start(const void *parameter)
 
       // paint the otp code with vendor
       rb->lcd_set_foreground(LCD_WHITE);
-      rb->lcd_putsxyf(20, (row * 30) + 30, "%s - %06u", entries[i].vendor, entries[i].otp);
+      rb->lcd_putsxyf(20, (row * 30) + 30, "%s - %0*u", entries[i].vendor, entries[i].digits, entries[i].otp);
     }
 
     // paint selection pixel
