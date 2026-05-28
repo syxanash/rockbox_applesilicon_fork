@@ -16,7 +16,10 @@ struct config_entry
 
 static struct config_entry entries[MAX_ENTRIES];
 static int num_entries = 0;
-static int entries_per_page = 3;
+
+// 40 = (header + top ... and bottom ...)
+// then 30 = items per row (totp + progress bar)
+static int entries_per_page = (LCD_HEIGHT - 40) / 30;
 static int utc_offset = 0;
 
 static void load_cfg(void)
