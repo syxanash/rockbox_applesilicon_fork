@@ -23,6 +23,8 @@ static int num_entries = 0;
 static int entries_per_page = (LCD_HEIGHT - 40) / 30;
 static int utc_offset = 0;
 
+// this func was mostly vibecoded because it's a pain in the a*s to do
+// file handling in C
 static void load_cfg(void)
 {
   int fd = rb->open(CFG_FILE, O_RDONLY);
