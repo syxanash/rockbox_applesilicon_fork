@@ -1,3 +1,4 @@
+// https://github.com/kokke/tiny-HMAC-c/blob/main/src/sha1.c
 /*
  *  sha1.c
  *

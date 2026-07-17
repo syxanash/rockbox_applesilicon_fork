@@ -1,3 +1,4 @@
+// https://github.com/kokke/tiny-HMAC-c/blob/main/src/hmac.c
 #include "hmac.h"
 
 /* function doing the HMAC-SHA-1 calculation */

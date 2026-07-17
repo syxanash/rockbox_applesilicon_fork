@@ -1,3 +1,4 @@
+// https://github.com/kokke/tiny-HMAC-c/blob/main/src/hmac.h
 #ifndef __HMAC_H__
 #define __HMAC_H__
 
