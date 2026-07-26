@@ -3,7 +3,7 @@
 
 #include "totp_utils/totp.h"
 
-#define CFG_FILE PLUGIN_GAMES_DATA_DIR "/1pass/seeds.cfg"
+#define CFG_FILE PLUGIN_APPS_DATA_DIR "/totpod/seeds.cfg"
 #define MAX_ENTRIES 16
 
 struct config_entry

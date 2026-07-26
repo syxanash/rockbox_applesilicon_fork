@@ -1,3 +1,4 @@
+// This was just a test
 #include "plugin.h"
 
 enum plugin_status plugin_start(const void *parameter)
