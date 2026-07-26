@@ -264,10 +264,10 @@ enum plugin_status plugin_start(const void *parameter)
     rb->lcd_putsxy(0, 0, "MENU to quit");
 
     if ((current_page * entries_per_page) < num_entries)
-      rb->lcd_putsxy(0, LCD_HEIGHT - 10, "···");
+      rb->lcd_putsxy(0, LCD_HEIGHT - 10, "v");
 
     if (current_page > 1)
-      rb->lcd_putsxy(0, 15, "···");
+      rb->lcd_putsxy(0, 15, "^");
 
     for (int i = page_start; i < page_end; i++)
     {
