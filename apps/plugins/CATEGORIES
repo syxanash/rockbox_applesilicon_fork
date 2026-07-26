@@ -1,3 +1,4 @@
+totpod,apps
 2048,games
 alpine_cdc,apps
 alarmclock,apps
@@ -58,6 +59,7 @@ lamp,apps
 lastfm_scrobbler,apps
 lastfm_scrobbler_viewer,viewers
 logo,demos
+aapippo,demos
 lrcplayer,apps
 lua,viewers
 fractals,demos
